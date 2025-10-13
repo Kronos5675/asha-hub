@@ -39,13 +39,13 @@ const Department = () => {
   const navigate = useNavigate();
 
   const departmentNames: Record<string, string> = {
-    finance: "Finance",
-    hr: "Human Resources",
-    operations: "Operations",
-    it: "IT",
-    marketing: "Marketing",
-    legal: "Legal",
-    admin: "Administration",
+    cardiology: "Cardiology",
+    pathology: "Pathology",
+    dental: "Dental",
+    oncology: "Oncology",
+    ophthalmology: "Ophthalmology",
+    neurology: "Neurology",
+    dermatology: "Dermatology",
   };
 
   const departmentName = id ? departmentNames[id] || "Unknown" : "Unknown";

@@ -4,24 +4,24 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   Upload, 
-  Building2, 
-  Users, 
-  Settings, 
-  Laptop, 
-  Megaphone, 
-  Scale, 
-  UserCog,
+  Heart, 
+  Microscope, 
+  Smile, 
+  Activity, 
+  Eye, 
+  Brain, 
+  Sparkles,
   LogOut
 } from "lucide-react";
 
 const departments = [
-  { id: "finance", name: "Finance", icon: Building2, color: "hsl(250 95% 63%)" },
-  { id: "hr", name: "Human Resources", icon: Users, color: "hsl(262 83% 58%)" },
-  { id: "operations", name: "Operations", icon: Settings, color: "hsl(280 80% 60%)" },
-  { id: "it", name: "IT", icon: Laptop, color: "hsl(240 90% 65%)" },
-  { id: "marketing", name: "Marketing", icon: Megaphone, color: "hsl(290 85% 62%)" },
-  { id: "legal", name: "Legal", icon: Scale, color: "hsl(270 85% 60%)" },
-  { id: "admin", name: "Administration", icon: UserCog, color: "hsl(255 90% 65%)" },
+  { id: "cardiology", name: "Cardiology", icon: Heart, color: "hsl(0 85% 60%)" },
+  { id: "pathology", name: "Pathology", icon: Microscope, color: "hsl(280 80% 60%)" },
+  { id: "dental", name: "Dental", icon: Smile, color: "hsl(200 90% 55%)" },
+  { id: "oncology", name: "Oncology", icon: Activity, color: "hsl(340 85% 58%)" },
+  { id: "ophthalmology", name: "Ophthalmology", icon: Eye, color: "hsl(260 85% 62%)" },
+  { id: "neurology", name: "Neurology", icon: Brain, color: "hsl(250 95% 63%)" },
+  { id: "dermatology", name: "Dermatology", icon: Sparkles, color: "hsl(290 85% 62%)" },
 ];
 
 const Dashboard = () => {
