@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,6 +16,8 @@ import {
   FolderOpen,
   Settings
 } from "lucide-react";
+import { addFile, clearAuth, getAuth } from "@/lib/db";
+import { useToast } from "@/hooks/use-toast";
 
 const departments = [
   { id: "cardiology", name: "Cardiology", icon: Heart, color: "hsl(0 85% 60%)" },
@@ -30,6 +32,17 @@ const departments = [
 const Dashboard = () => {
   const navigate = useNavigate();
   const [isDragActive, setIsDragActive] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("cardiology");
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Check if user is logged in
+    getAuth().then((auth) => {
+      if (!auth) {
+        navigate("/login");
+      }
+    });
+  }, [navigate]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -40,18 +53,39 @@ const Dashboard = () => {
     setIsDragActive(false);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragActive(false);
-    console.log("Files dropped:", e.dataTransfer.files);
+    
+    const files = Array.from(e.dataTransfer.files);
+    await uploadFiles(files);
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log("Files selected:", e.target.files);
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      await uploadFiles(files);
+    }
   };
 
-  const handleLogout = () => {
-    navigate("/");
+  const uploadFiles = async (files: File[]) => {
+    for (const file of files) {
+      await addFile(file, selectedDepartment);
+    }
+    
+    toast({
+      title: "Files uploaded",
+      description: `${files.length} file(s) saved to ${selectedDepartment}`,
+    });
+  };
+
+  const handleLogout = async () => {
+    await clearAuth();
+    toast({
+      title: "Logged out",
+      description: "You have been signed out successfully",
+    });
+    navigate("/login");
   };
 
   const handleDepartmentClick = (departmentId: string) => {
@@ -111,6 +145,27 @@ const Dashboard = () => {
           {/* Upload Section */}
           <section>
             <h2 className="text-3xl font-bold mb-6">Upload Documents</h2>
+            
+            {/* Department Selector */}
+            <div className="mb-4">
+              <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                Select Department
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {departments.map((dept) => (
+                  <Button
+                    key={dept.id}
+                    variant={selectedDepartment === dept.id ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedDepartment(dept.id)}
+                    className={selectedDepartment === dept.id ? "bg-primary text-primary-foreground" : ""}
+                  >
+                    {dept.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
             <Card 
               className={`border-2 border-dashed transition-all duration-300 bg-card/50 backdrop-blur-sm ${
                 isDragActive ? 'border-primary bg-primary/5 scale-[1.01]' : 'border-border'

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,16 +6,37 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { FileText } from "lucide-react";
+import { saveAuth, getAuth } from "@/lib/db";
+import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
   const [ashaId, setAshaId] = useState("");
   const [password, setPassword] = useState("");
   const [keepSignedIn, setKeepSignedIn] = useState(false);
-  const [userType, setUserType] = useState("user");
+  const [userType, setUserType] = useState<"user" | "administration">("user");
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    // Check if user is already logged in
+    getAuth().then((auth) => {
+      if (auth && auth.keepSignedIn) {
+        navigate("/dashboard");
+      }
+    });
+  }, [navigate]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Save to local storage
+    await saveAuth(ashaId, userType, keepSignedIn);
+    
+    toast({
+      title: "Login successful",
+      description: "Welcome to Document Portal",
+    });
+    
     navigate("/dashboard");
   };
 
@@ -65,7 +86,11 @@ const Login = () => {
 
             <div className="space-y-3">
               <Label className="text-sm font-medium">Role</Label>
-              <RadioGroup value={userType} onValueChange={setUserType} className="flex gap-4">
+              <RadioGroup 
+                value={userType} 
+                onValueChange={(value) => setUserType(value as "user" | "administration")} 
+                className="flex gap-4"
+              >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="user" id="user" />
                   <Label htmlFor="user" className="font-normal cursor-pointer">User</Label>

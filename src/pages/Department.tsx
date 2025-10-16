@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,32 +17,25 @@ import {
   LogOut,
   MoreVertical
 } from "lucide-react";
-
-const sampleFiles = [
-  { id: "1", name: "Q4_Report_2024.pdf", type: "pdf", size: "2.4 MB", date: "2024-03-15" },
-  { id: "2", name: "Budget_Analysis.xlsx", type: "excel", size: "1.8 MB", date: "2024-03-14" },
-  { id: "3", name: "Team_Photo.jpg", type: "image", size: "856 KB", date: "2024-03-13" },
-  { id: "4", name: "Policy_Document.docx", type: "doc", size: "524 KB", date: "2024-03-12" },
-  { id: "5", name: "Presentation.pptx", type: "ppt", size: "3.2 MB", date: "2024-03-11" },
-  { id: "6", name: "Annual_Review.pdf", type: "pdf", size: "1.9 MB", date: "2024-03-10" },
-];
+import { getFilesByDepartment, deleteFile, clearAuth } from "@/lib/db";
+import { useToast } from "@/hooks/use-toast";
 
 const getFileIcon = (type: string) => {
-  switch (type) {
-    case "pdf":
-      return <FileText className="w-6 h-6 text-red-400" />;
-    case "excel":
-      return <FileSpreadsheet className="w-6 h-6 text-green-400" />;
-    case "image":
-      return <ImageIcon className="w-6 h-6 text-blue-400" />;
-    default:
-      return <File className="w-6 h-6 text-gray-400" />;
+  if (type.includes('pdf')) {
+    return <FileText className="w-6 h-6 text-red-400" />;
+  } else if (type.includes('sheet') || type.includes('excel')) {
+    return <FileSpreadsheet className="w-6 h-6 text-green-400" />;
+  } else if (type.includes('image')) {
+    return <ImageIcon className="w-6 h-6 text-blue-400" />;
   }
+  return <File className="w-6 h-6 text-gray-400" />;
 };
 
 const Department = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [files, setFiles] = useState<any[]>([]);
 
   const departmentNames: Record<string, string> = {
     cardiology: "Cardiology",
@@ -55,12 +49,55 @@ const Department = () => {
 
   const departmentName = id ? departmentNames[id] || "Unknown" : "Unknown";
 
+  useEffect(() => {
+    loadFiles();
+  }, [id]);
+
+  const loadFiles = async () => {
+    if (id) {
+      const departmentFiles = await getFilesByDepartment(id);
+      setFiles(departmentFiles);
+    }
+  };
+
   const handleBack = () => {
     navigate("/dashboard");
   };
 
-  const handleLogout = () => {
-    navigate("/");
+  const handleLogout = async () => {
+    await clearAuth();
+    navigate("/login");
+  };
+
+  const handleDownload = async (fileId: string) => {
+    const file = files.find(f => f.id === fileId);
+    if (file) {
+      const url = URL.createObjectURL(file.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  const handleDelete = async (fileId: string) => {
+    await deleteFile(fileId);
+    toast({
+      title: "File deleted",
+      description: "The file has been removed successfully",
+    });
+    loadFiles();
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
   };
 
   return (
@@ -122,7 +159,7 @@ const Department = () => {
               </Button>
               <div>
                 <h1 className="text-3xl font-bold">{departmentName}</h1>
-                <p className="text-sm text-muted-foreground mt-1">{sampleFiles.length} documents</p>
+                <p className="text-sm text-muted-foreground mt-1">{files.length} documents</p>
               </div>
             </div>
             <Button 
@@ -136,52 +173,62 @@ const Department = () => {
 
         {/* Files Grid */}
         <div className="p-8">
-          <div className="grid grid-cols-1 gap-3">
-            {sampleFiles.map((file) => (
-              <Card
-                key={file.id}
-                className="group transition-all duration-200 hover:bg-card/80 bg-card border-border cursor-pointer"
-              >
-                <div className="flex items-center justify-between p-5">
-                  <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <div className="w-12 h-12 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
-                      {getFileIcon(file.type)}
+          {files.length === 0 ? (
+            <div className="text-center py-16">
+              <FolderOpen className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+              <h3 className="text-xl font-semibold mb-2">No documents yet</h3>
+              <p className="text-muted-foreground">Upload files from the dashboard to get started</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3">
+              {files.map((file) => (
+                <Card
+                  key={file.id}
+                  className="group transition-all duration-200 hover:bg-card/80 bg-card border-border cursor-pointer"
+                >
+                  <div className="flex items-center justify-between p-5">
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className="w-12 h-12 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
+                        {getFileIcon(file.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold truncate text-foreground">{file.name}</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {formatFileSize(file.size)} • {formatDate(file.uploadedAt)}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold truncate text-foreground">{file.name}</h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {file.size} • {file.date}
-                      </p>
+                    
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        className="hover:bg-primary/10 hover:text-primary"
+                        onClick={() => handleDownload(file.id)}
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        className="hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => handleDelete(file.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        className="hover:bg-secondary"
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className="hover:bg-primary/10 hover:text-primary"
-                    >
-                      <Download className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className="hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className="hover:bg-secondary"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>

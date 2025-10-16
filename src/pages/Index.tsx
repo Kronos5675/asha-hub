@@ -5,8 +5,8 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Redirect to login page
-    navigate("/login");
+    // Redirect to install page
+    navigate("/install");
   }, [navigate]);
 
   return null;
